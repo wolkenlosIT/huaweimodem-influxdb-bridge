@@ -34,7 +34,6 @@ SSL_CONTEXT = ssl._create_unverified_context()
 
 # Helper functions
 
-
 def get_value(data, key, default=None):
     value = data.get(key, default)
     return default if value is None else value
@@ -105,9 +104,7 @@ def escape_field_string(value):
     )
 
 
-
 # Huawei API
-
 
 def read_huawei():
 
@@ -123,25 +120,19 @@ def read_huawei():
         signal = client.device.signal()
         status = client.monitoring.status()
 
-
         # LTE EARFCN
-
 
         lte_dl_earfcn, lte_ul_earfcn = parse_earfcn(
             get_value(signal, "earfcn", "")
         )
 
-  
         # 5G NR EARFCN
-
 
         nr_dl_earfcn, nr_ul_earfcn = parse_earfcn(
             get_value(signal, "nrearfcn", "")
         )
 
-
         # LTE bandwidth
-
 
         dl_bandwidth = parse_number(
             get_value(signal, "dlbandwidth", 0)
@@ -151,22 +142,19 @@ def read_huawei():
             get_value(signal, "ulbandwidth", 0)
         )
 
-
         # 5G NR bandwidth
-
 
         nr_bandwidth = parse_number(
             get_value(signal, "nrdlbandwidth", 0)
         )
 
-
-        # Data
-
+        
+        # Data block
 
         data = {
 
             # Basic metrics
-          
+
             "connection_status": parse_int(
                 get_value(status, "ConnectionStatus", 0)
             ),
@@ -222,9 +210,31 @@ def read_huawei():
 
             "earfcn_ul": lte_ul_earfcn,
 
+            "band": get_value(
+                signal, "band", ""
+            ),
+
+            "band_info": get_value(
+                signal, "bandInfo", ""
+            ),
+
+            "lte_cqi": parse_int(
+                get_value(signal, "cqi0", 0)
+            ),
+
+            "tac": parse_int(
+                get_value(signal, "tac", 0)
+            ),
+
+            "cell_id": parse_int(
+                get_value(signal, "cell_id", 0)
+            ),
+
+            "scc_pci": parse_int(
+                get_value(signal, "scc_pci", 0)
+            ),
 
             # 5G NR radio
-
 
             "nr_rsrp": parse_number(
                 get_value(signal, "nrrsrp", 0)
@@ -294,7 +304,6 @@ def read_huawei():
 
 # InfluxDB
 
-
 def write_to_influx(data):
 
     url = (
@@ -307,8 +316,10 @@ def write_to_influx(data):
     line = (
         f"{MEASUREMENT},"
         f"router={HUAWEI_ROUTER_HOSTNAME} "
-        
+
+
         # Basic metrics
+
         f"connection_status={data['connection_status']}i,"
         f"service_status={data['service_status']}i,"
         f"sim_status={data['sim_status']}i,"
@@ -317,6 +328,7 @@ def write_to_influx(data):
         f"uptime={data['uptime']}i,"
 
         # LTE
+
         f"rsrp={data['rsrp']},"
         f"rsrq={data['rsrq']},"
         f"rssi={data['rssi']},"
@@ -326,8 +338,15 @@ def write_to_influx(data):
         f"ul_bandwidth={data['ul_bandwidth']},"
         f"earfcn_dl={data['earfcn_dl']}i,"
         f"earfcn_ul={data['earfcn_ul']}i,"
+        f"band=\"{escape_field_string(data['band'])}\","
+        f"band_info=\"{escape_field_string(data['band_info'])}\","
+        f"lte_cqi={data['lte_cqi']}i,"
+        f"tac={data['tac']}i,"
+        f"cell_id={data['cell_id']}i,"
+        f"scc_pci={data['scc_pci']}i,"
 
         # 5G NR
+
         f"nr_rsrp={data['nr_rsrp']},"
         f"nr_rsrq={data['nr_rsrq']},"
         f"nr_sinr={data['nr_sinr']},"
@@ -338,7 +357,9 @@ def write_to_influx(data):
         f"nr_cqi={data['nr_cqi']}i,"
         f"nr_bler={data['nr_bler']},"
 
+
         # Connection / network status
+
         f"roaming_status={data['roaming_status']}i,"
         f"poor_signal_status={data['poor_signal_status']}i,"
         f"endc_status={data['endc_status']}i,"
@@ -360,6 +381,7 @@ def write_to_influx(data):
     )
 
     try:
+
         with urllib.request.urlopen(
             request,
             timeout=10,
@@ -384,8 +406,7 @@ def write_to_influx(data):
 
 
 
-# Main
-
+# Main blockk
 
 def main():
 
@@ -462,6 +483,30 @@ def main():
 
         print(
             f"UL EARFCN         : {data['earfcn_ul']}"
+        )
+
+        print(
+            f"Band              : {data['band']}"
+        )
+
+        print(
+            f"Band Info         : {data['band_info']}"
+        )
+
+        print(
+            f"LTE CQI           : {data['lte_cqi']}"
+        )
+
+        print(
+            f"TAC               : {data['tac']}"
+        )
+
+        print(
+            f"Cell ID           : {data['cell_id']}"
+        )
+
+        print(
+            f"SCC PCI           : {data['scc_pci']}"
         )
 
         print()
