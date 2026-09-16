@@ -1,0 +1,10 @@
+[Unit]
+Description=Run Huawei Modem to InfluxDB Bridge every 2 minutes
+
+[Timer]
+OnBootSec=30s
+OnUnitActiveSec=2min
+Unit=huawei-influxdb-bridge.service
+
+[Install]
+WantedBy=timers.target
