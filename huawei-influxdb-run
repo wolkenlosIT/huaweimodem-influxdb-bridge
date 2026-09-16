@@ -1,0 +1,12 @@
+#!/bin/bash
+
+/opt/huawei-influxdb-bridge/venv/bin/python \
+    /opt/huawei-influxdb-bridge/app.py
+
+RESULT=$?
+
+if [ $RESULT -eq 0 ]; then
+    curl -fsS -m 10 "$KUMA_PUSH_URL"
+fi
+
+exit $RESULT
