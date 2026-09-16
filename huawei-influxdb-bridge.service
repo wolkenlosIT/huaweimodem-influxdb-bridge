@@ -1,0 +1,18 @@
+[Unit]
+Description=Huawei Modem to InfluxDB bridge
+After=network-online.target
+
+[Service]
+User=huawei-influxdb
+Group=huawei-influxdb
+
+EnvironmentFile=/etc/huawei-influxdb-bridge.env
+
+WorkingDirectory=/opt/huawei-influxdb-bridge
+
+ExecStart=/opt/huawei-influxdb-bridge/huawei-influxdb-run
+
+NoNewPrivileges=true
+
+[Install]
+WantedBy=multi-user.target
