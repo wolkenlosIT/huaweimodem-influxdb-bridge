@@ -12,7 +12,7 @@ from huawei_lte_api.Connection import Connection
 
 
 
-# Configuration
+# Variables. Don´t change anything here. Place it in huawei-influxdb-bridge.env
 
 HUAWEI_URL = os.environ["HUAWEI_URL"]
 HUAWEI_USERNAME = os.environ["HUAWEI_USERNAME"]
