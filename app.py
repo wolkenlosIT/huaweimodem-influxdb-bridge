@@ -119,6 +119,7 @@ def read_huawei():
         information = client.device.information()
         signal = client.device.signal()
         status = client.monitoring.status()
+        traffic = client.monitoring.traffic_statistics()
 
         # LTE EARFCN
 
@@ -179,6 +180,26 @@ def read_huawei():
                 get_value(information, "uptime", 0)
             ),
 
+            
+            # Traffic
+            "download_rate": parse_int(
+                get_value(traffic, "CurrentDownloadRate", 0)
+            ),
+            "upload_rate": parse_int(
+                get_value(traffic, "CurrentUploadRate", 0)
+            ),
+            "current_download": parse_int(
+                get_value(traffic, "CurrentDownload", 0)
+            ),
+            "current_upload": parse_int(
+                get_value(traffic, "CurrentUpload", 0)
+            ),
+            "total_download": parse_int(
+                get_value(traffic, "TotalDownload", 0)
+            ),
+            "total_upload": parse_int(
+                get_value(traffic, "TotalUpload", 0)
+            ),
 
             # LTE radio
 
@@ -326,9 +347,16 @@ def write_to_influx(data):
         f"ipv4=\"{escape_field_string(data['ipv4'])}\","
         f"ipv6=\"{escape_field_string(data['ipv6'])}\","
         f"uptime={data['uptime']}i,"
-
+        
+        # Traffic
+        f"download_rate={data['download_rate']}i,"
+        f"upload_rate={data['upload_rate']}i,"
+        f"current_download={data['current_download']}i,"
+        f"current_upload={data['current_upload']}i,"
+        f"total_download={data['total_download']}i,"
+        f"total_upload={data['total_upload']}i,"
+        
         # LTE
-
         f"rsrp={data['rsrp']},"
         f"rsrq={data['rsrq']},"
         f"rssi={data['rssi']},"
