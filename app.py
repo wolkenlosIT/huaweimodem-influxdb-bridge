@@ -315,7 +315,7 @@ def write_to_influx(data):
 
     line = (
         f"{MEASUREMENT},"
-        f"router={HUAWEI_ROUTER_HOSTNAME} "
+        f"hostname={HUAWEI_ROUTER_HOSTNAME} "
 
 
         # Basic metrics
@@ -418,7 +418,7 @@ def main():
         print("============")
 
         print(
-            f"Router            : {HUAWEI_ROUTER_HOSTNAME}"
+            f"Hostname            : {HUAWEI_ROUTER_HOSTNAME}"
         )
 
         print(
