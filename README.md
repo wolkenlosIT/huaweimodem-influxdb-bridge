@@ -107,5 +107,12 @@ sudo systemctl status huawei-influxdb-bridge.service
 6. Give it your desired name and id. Select your influxdb as the Datasource.
 7. Have fun!
 
+
+## More examples of the Dashboard:
+![Dashboard2](https://github.com/wolkenlosIT/huaweimodem-influxdb-bridge/blob/main/examples/dashboard2.png)
+![Dashboard3](https://github.com/wolkenlosIT/huaweimodem-influxdb-bridge/blob/main/examples/dashboard3.png)
+
+
+
 ##
 Big thanks to Salamek for creating the huawei python api in the first place!
