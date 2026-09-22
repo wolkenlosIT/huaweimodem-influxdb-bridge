@@ -13,9 +13,9 @@ Pyhton Bridge that collects data from an Huawei cellular modem and pushes it int
 
 ## Setup
 1. I will show you how to add an api key to your bucket in influxdb
-2. We will then setup the python app and systemd service on the lxc/VM
-3. We will setup the systemd timer
-4. Optional: We will monitor the app via Uptime Kuma
+2. Optional: We will monitor the app via Uptime Kumae
+3. Then we will setup the python app on the lxc/VM
+4. We will setup the systemd timer and systemd service
 5. We will import the Grafana Dashboard
 
 
