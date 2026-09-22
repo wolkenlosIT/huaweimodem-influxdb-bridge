@@ -145,8 +145,12 @@ def read_huawei():
 
         # 5G NR bandwidth
 
-        nr_bandwidth = parse_number(
+        nr_dl_bandwidth = parse_number(
             get_value(signal, "nrdlbandwidth", 0)
+        )
+
+        nr_ul_bandwidth = parse_number(
+            get_value(signal, "nrulbandwidth", 0)
         )
 
         
@@ -285,7 +289,9 @@ def read_huawei():
                 get_value(signal, "nrsinr", 0)
             ),
 
-            "nr_bandwidth": nr_bandwidth,
+            "nr_dl_bandwidth": nr_dl_bandwidth,
+
+            "nr_ul_bandwidth": nr_ul_bandwidth,
 
             "nr_dl_earfcn": nr_dl_earfcn,
 
@@ -397,7 +403,8 @@ def write_to_influx(data):
         f"nr_rsrp={data['nr_rsrp']},"
         f"nr_rsrq={data['nr_rsrq']},"
         f"nr_sinr={data['nr_sinr']},"
-        f"nr_bandwidth={data['nr_bandwidth']},"
+        f"nr_dl_bandwidth={data['nr_dl_bandwidth']},"
+        f"nr_ul_bandwidth={data['nr_ul_bandwidth']},"
         f"nr_dl_earfcn={data['nr_dl_earfcn']}i,"
         f"nr_ul_earfcn={data['nr_ul_earfcn']}i,"
         f"nr_rank={data['nr_rank']}i,"
@@ -575,7 +582,11 @@ def main():
         )
 
         print(
-            f"NR Bandwidth      : {data['nr_bandwidth']} MHz"
+            f"NR DL Bandwidth      : {data['nr_dl_bandwidth']} MHz"
+        )
+        
+        print(
+            f"NR UL Bandwidth      : {data['nr_ul_bandwidth']} MHz"
         )
 
         print(
