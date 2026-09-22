@@ -150,6 +150,26 @@ def read_huawei():
         )
 
         
+        # Band information
+
+        band = get_value(
+            signal, "band", ""
+        )
+
+        lte_band = " + ".join(
+            part.strip()
+            for part in band.split("+")
+            if "(B" in part
+        )
+
+        nr_band = " + ".join(
+            part.strip()
+            for part in band.split("+")
+            if "(N" in part
+        )
+
+        
+        
         # Data block
 
         data = {
@@ -230,14 +250,10 @@ def read_huawei():
             "earfcn_dl": lte_dl_earfcn,
 
             "earfcn_ul": lte_ul_earfcn,
+            
+            "lte_band": lte_band,
 
-            "band": get_value(
-                signal, "band", ""
-            ),
-
-            "band_info": get_value(
-                signal, "bandInfo", ""
-            ),
+            "nr_band": nr_band,
 
             "lte_cqi": parse_int(
                 get_value(signal, "cqi0", 0)
@@ -370,8 +386,7 @@ def write_to_influx(data):
         f"ul_bandwidth={data['ul_bandwidth']},"
         f"earfcn_dl={data['earfcn_dl']}i,"
         f"earfcn_ul={data['earfcn_ul']}i,"
-        f"band=\"{escape_field_string(data['band'])}\","
-        f"band_info=\"{escape_field_string(data['band_info'])}\","
+        f"lte_band=\"{escape_field_string(data['lte_band'])}\","
         f"lte_cqi={data['lte_cqi']}i,"
         f"tac={data['tac']}i,"
         f"cell_id={data['cell_id']}i,"
@@ -388,6 +403,7 @@ def write_to_influx(data):
         f"nr_rank={data['nr_rank']}i,"
         f"nr_cqi={data['nr_cqi']}i,"
         f"nr_bler={data['nr_bler']},"
+        f"nr_band=\"{escape_field_string(data['nr_band'])}\","
 
 
         # Connection / network status
@@ -519,11 +535,11 @@ def main():
         )
 
         print(
-            f"Band              : {data['band']}"
+            f"LTE Band          : {data['lte_band']}"
         )
 
         print(
-            f"Band Info         : {data['band_info']}"
+            f"NR Band           : {data['nr_band']}"
         )
 
         print(
