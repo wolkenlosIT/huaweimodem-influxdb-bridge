@@ -301,6 +301,10 @@ def read_huawei():
             "endc_status": parse_int(
                 get_value(status, "EndcStatus", 0)
             ),
+            
+            "endc_restricted_status": parse_int(
+                get_value(status, "endcRestrictedStatus", 0)
+            ),
 
             "signal_icon": parse_int(
                 get_value(status, "SignalIcon", 0)
@@ -391,6 +395,7 @@ def write_to_influx(data):
         f"roaming_status={data['roaming_status']}i,"
         f"poor_signal_status={data['poor_signal_status']}i,"
         f"endc_status={data['endc_status']}i,"
+        f"endc_restricted_status={data['endc_restricted_status']}i,"
         f"signal_icon={data['signal_icon']}i,"
         f"signal_icon_nr={data['signal_icon_nr']}i,"
         f"current_network_type={data['current_network_type']}i,"
@@ -591,6 +596,10 @@ def main():
 
         print(
             f"EN-DC Status      : {data['endc_status']}"
+        )
+
+        print(
+            f"EN-DC Restricted     : {data['endc_restricted_status']}"
         )
 
         print(
