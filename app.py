@@ -23,14 +23,16 @@ INFLUX_URL = os.environ["INFLUX_URL"].rstrip("/")
 INFLUX_ORG = os.environ["INFLUX_ORG"]
 INFLUX_BUCKET = os.environ["INFLUX_BUCKET"]
 INFLUX_TOKEN = os.environ["INFLUX_TOKEN"]
+INFLUX_TLS_VERIFY = os.environ["INFLUX_TLS_VERIFY"].lower() in ("1", "true", "yes")
 
 MEASUREMENT = "huaweimodem"
 
-# Temporary workaround:
-# Disable TLS certificate verification for the influxdb connection
-SSL_CONTEXT = ssl._create_unverified_context()
-
-
+# TLS certificate verification for the InfluxDB connection
+if INFLUX_TLS_VERIFY:
+    SSL_CONTEXT = ssl.create_default_context()
+else:
+    # Disable TLS verification for InfluxDB certificate
+    SSL_CONTEXT = ssl._create_unverified_context()
 
 # Helper functions
 
