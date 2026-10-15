@@ -38,7 +38,7 @@ Pyhton Bridge that collects data from an Huawei cellular modem and pushes it int
 1. Log into your debian or ubuntu lxc/vm with root or a sudo user
 2. Let´s create the app first. Our working dictionary will be:
 ```shell
-ssudo mkdir /opt/huawei-influxdb-bridge
+sudo mkdir /opt/huawei-influxdb-bridge
 ```
 3. Copy/past the app.py or download it to the directory. You don´t have to change anything here.
 ```shell
