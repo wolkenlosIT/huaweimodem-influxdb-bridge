@@ -5,7 +5,7 @@ Pyhton Bridge that collects data from an Huawei cellular modem and pushes it int
 
 
 ## Requirements
-* Huawei LTE or 5G Modem
+* Huawei LTE or 5G Modem / Router
 * Debian or Ubuntu LXC/VM
 * InfluxDBv2 (only v2 is supported)
 * Grafana
