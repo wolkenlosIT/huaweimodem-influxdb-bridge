@@ -64,12 +64,12 @@ sudo -u huawei-influxdb /opt/huawei-influxdb-bridge/venv/bin/pip install --upgra
 sudo -u huawei-influxdb /opt/huawei-influxdb-bridge/venv/bin/pip install huawei-lte-api
 ```
 
-7. The next step is the creation of a systemd service. We will start with creation of a timer. It was run every 2 Minutes to get new data from your router. If you want more or less change it here! 
+7. The next step is the creation of a systemd service. We will start with creating a timer. It will run every 2 Minutes to get new data from your router. If you want more or less change it here! 
 ```shell
 sudo nano /etc/systemd/system/huawei-influxdb-bridge.timer
 ```
 
-8. We will now create a little bash script that will be started by the timer. This create will push to your Kuma if the app.py runs successfully.
+8. We will now create a little bash script that will be started by the timer. This will push to your Kuma if the app.py runs successfully.
 ```shell
 sudo nano /opt/huawei-influxdb-bridge/huawei-influxdb-run
 ```
