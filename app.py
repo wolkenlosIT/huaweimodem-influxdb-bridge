@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# Version 2.0
 
 import os
 import sys
@@ -13,6 +14,7 @@ from huawei_lte_api.Connection import Connection
 
 
 # Variables. Don´t change anything here. Place it in huawei-influxdb-bridge.env
+DEBUG = os.environ["DEBUG"].lower() in ("1", "true", "yes")
 
 HUAWEI_URL = os.environ["HUAWEI_URL"]
 HUAWEI_USERNAME = os.environ["HUAWEI_USERNAME"]
@@ -27,6 +29,38 @@ INFLUX_TLS_VERIFY = os.environ["INFLUX_TLS_VERIFY"].lower() in ("1", "true", "ye
 
 MEASUREMENT = "huaweimodem"
 
+
+# Units for the console output
+UNITS = {
+    "uptime": " s",
+    "rsrp": " dBm", "rssi": " dBm", "nr_rsrp": " dBm",
+    "rsrq": " dB", "sinr": " dB", "nr_rsrq": " dB", "nr_sinr": " dB",
+    "dl_bandwidth": " MHz", "ul_bandwidth": " MHz",
+    "nr_dl_bandwidth": " MHz", "nr_ul_bandwidth": " MHz",
+    }
+
+
+# Field lists for InfluxDB. 
+INT_FIELDS = (
+    "connection_status", "service_status", "sim_status", "uptime",
+    "download_rate", "upload_rate", "current_download", "current_upload",
+    "total_download", "total_upload", "pci", "earfcn_dl", "earfcn_ul",
+    "lte_cqi", "tac", "cell_id", "scc_pci", "nr_dl_earfcn", "nr_ul_earfcn",
+    "nr_rank", "nr_cqi", "roaming_status", "poor_signal_status",
+    "endc_status", "endc_restricted_status", "signal_icon",
+    "signal_icon_nr", "current_network_type", "current_network_type_ex",
+)
+
+FLOAT_FIELDS = (
+    "rsrp", "rsrq", "rssi", "sinr", "dl_bandwidth", "ul_bandwidth",
+    "nr_rsrp", "nr_rsrq", "nr_sinr", "nr_dl_bandwidth", "nr_ul_bandwidth",
+    "nr_bler",
+)
+
+STRING_FIELDS = ("ipv4", "ipv6", "lte_band", "nr_band")
+
+
+
 # TLS certificate verification for the InfluxDB connection
 if INFLUX_TLS_VERIFY:
     SSL_CONTEXT = ssl.create_default_context()
@@ -34,14 +68,14 @@ else:
     # Disable TLS verification for InfluxDB certificate
     SSL_CONTEXT = ssl._create_unverified_context()
 
-# Helper functions
 
+# Helper functions
 def get_value(data, key, default=None):
     value = data.get(key, default)
     return default if value is None else value
 
 
-def parse_number(value, default=0.0):
+def parse_number(value, default=None):
     """
     Convert values such as:
       '-95dBm'
@@ -50,6 +84,8 @@ def parse_number(value, default=0.0):
       '80MHz'
       '15'
     into float values.
+
+    Returns `default` (None unless given) if there is no usable value.
     """
     if value is None:
         return default
@@ -66,7 +102,7 @@ def parse_number(value, default=0.0):
         return default
 
 
-def parse_int(value, default=0):
+def parse_int(value, default=None):
     try:
         return int(float(value))
     except (ValueError, TypeError):
@@ -81,10 +117,10 @@ def parse_earfcn(value):
         DL:630000 UL:630000
 
     Returns:
-        (downlink, uplink)
+        (downlink, uplink) - None if not available
     """
-    dl = 0
-    ul = 0
+    dl = None
+    ul = None
 
     if value:
         parts = str(value).split()
@@ -107,7 +143,6 @@ def escape_field_string(value):
 
 
 # Huawei API
-
 def read_huawei():
 
     with Connection(
@@ -138,21 +173,21 @@ def read_huawei():
         # LTE bandwidth
 
         dl_bandwidth = parse_number(
-            get_value(signal, "dlbandwidth", 0)
+            get_value(signal, "dlbandwidth")
         )
 
         ul_bandwidth = parse_number(
-            get_value(signal, "ulbandwidth", 0)
+            get_value(signal, "ulbandwidth")
         )
 
         # 5G NR bandwidth
 
         nr_dl_bandwidth = parse_number(
-            get_value(signal, "nrdlbandwidth", 0)
+            get_value(signal, "nrdlbandwidth")
         )
 
         nr_ul_bandwidth = parse_number(
-            get_value(signal, "nrulbandwidth", 0)
+            get_value(signal, "nrulbandwidth")
         )
 
         
@@ -177,21 +212,22 @@ def read_huawei():
         
         
         # Data block
+        # No default -> value is None if the modem delivers nothing.
 
         data = {
 
             # Basic metrics
 
             "connection_status": parse_int(
-                get_value(status, "ConnectionStatus", 0)
+                get_value(status, "ConnectionStatus")
             ),
 
             "service_status": parse_int(
-                get_value(status, "ServiceStatus", 0)
+                get_value(status, "ServiceStatus")
             ),
 
             "sim_status": parse_int(
-                get_value(status, "SimStatus", 0)
+                get_value(status, "SimStatus")
             ),
 
             "ipv4": get_value(
@@ -203,50 +239,50 @@ def read_huawei():
             ),
 
             "uptime": parse_int(
-                get_value(information, "uptime", 0)
+                get_value(information, "uptime")
             ),
 
             
             # Traffic
             "download_rate": parse_int(
-                get_value(traffic, "CurrentDownloadRate", 0)
-            ),
+                get_value(traffic, "CurrentDownloadRate")
+                ),
             "upload_rate": parse_int(
-                get_value(traffic, "CurrentUploadRate", 0)
-            ),
+                get_value(traffic, "CurrentUploadRate")
+                ),
             "current_download": parse_int(
-                get_value(traffic, "CurrentDownload", 0)
-            ),
+                get_value(traffic, "CurrentDownload")
+                ),
             "current_upload": parse_int(
-                get_value(traffic, "CurrentUpload", 0)
-            ),
+                get_value(traffic, "CurrentUpload")
+                ),
             "total_download": parse_int(
-                get_value(traffic, "TotalDownload", 0)
-            ),
+                get_value(traffic, "TotalDownload")
+                ),
             "total_upload": parse_int(
-                get_value(traffic, "TotalUpload", 0)
-            ),
+                get_value(traffic, "TotalUpload")
+                ),
 
             # LTE radio
 
             "rsrp": parse_number(
-                get_value(signal, "rsrp", 0)
+                get_value(signal, "rsrp")
             ),
 
             "rsrq": parse_number(
-                get_value(signal, "rsrq", 0)
+                get_value(signal, "rsrq")
             ),
 
             "rssi": parse_number(
-                get_value(signal, "rssi", 0)
+                get_value(signal, "rssi")
             ),
 
             "sinr": parse_number(
-                get_value(signal, "sinr", 0)
+                get_value(signal, "sinr")
             ),
 
             "pci": parse_int(
-                get_value(signal, "pci", 0)
+                get_value(signal, "pci")
             ),
 
             "dl_bandwidth": dl_bandwidth,
@@ -262,33 +298,33 @@ def read_huawei():
             "nr_band": nr_band,
 
             "lte_cqi": parse_int(
-                get_value(signal, "cqi0", 0)
+                get_value(signal, "cqi0")
             ),
 
             "tac": parse_int(
-                get_value(signal, "tac", 0)
+                get_value(signal, "tac")
             ),
 
             "cell_id": parse_int(
-                get_value(signal, "cell_id", 0)
+                get_value(signal, "cell_id")
             ),
 
             "scc_pci": parse_int(
-                get_value(signal, "scc_pci", 0)
+                get_value(signal, "scc_pci")
             ),
 
             # 5G NR radio
 
             "nr_rsrp": parse_number(
-                get_value(signal, "nrrsrp", 0)
+                get_value(signal, "nrrsrp")
             ),
 
             "nr_rsrq": parse_number(
-                get_value(signal, "nrrsrq", 0)
+                get_value(signal, "nrrsrq")
             ),
 
             "nr_sinr": parse_number(
-                get_value(signal, "nrsinr", 0)
+                get_value(signal, "nrsinr")
             ),
 
             "nr_dl_bandwidth": nr_dl_bandwidth,
@@ -300,50 +336,50 @@ def read_huawei():
             "nr_ul_earfcn": nr_ul_earfcn,
 
             "nr_rank": parse_int(
-                get_value(signal, "nrrank", 0)
+                get_value(signal, "nrrank")
             ),
 
             "nr_cqi": parse_int(
-                get_value(signal, "nrcqi0", 0)
+                get_value(signal, "nrcqi0")
             ),
 
             "nr_bler": parse_number(
-                get_value(signal, "nrbler", 0)
+                get_value(signal, "nrbler")
             ),
 
 
             # Connection / network status
 
             "roaming_status": parse_int(
-                get_value(status, "RoamingStatus", 0)
+                get_value(status, "RoamingStatus")
             ),
 
             "poor_signal_status": parse_int(
-                get_value(status, "poorSignalStatus", 0)
+                get_value(status, "poorSignalStatus")
             ),
 
             "endc_status": parse_int(
-                get_value(status, "EndcStatus", 0)
+                get_value(status, "EndcStatus")
             ),
             
             "endc_restricted_status": parse_int(
-                get_value(status, "endcRestrictedStatus", 0)
+                get_value(status, "endcRestrictedStatus")
             ),
 
             "signal_icon": parse_int(
-                get_value(status, "SignalIcon", 0)
+                get_value(status, "SignalIcon")
             ),
 
             "signal_icon_nr": parse_int(
-                get_value(status, "SignalIconNr", 0)
+                get_value(status, "SignalIconNr")
             ),
 
             "current_network_type": parse_int(
-                get_value(status, "CurrentNetworkType", 0)
+                get_value(status, "CurrentNetworkType")
             ),
 
             "current_network_type_ex": parse_int(
-                get_value(status, "CurrentNetworkTypeEx", 0)
+                get_value(status, "CurrentNetworkTypeEx")
             ),
         }
 
@@ -352,7 +388,6 @@ def read_huawei():
 
 
 # InfluxDB
-
 def write_to_influx(data):
 
     url = (
@@ -362,69 +397,26 @@ def write_to_influx(data):
         f"&precision=s"
     )
 
+    # Only write fields that actually have a value
+
+    fields = []
+
+    for name in INT_FIELDS:
+        if data[name] is not None:
+            fields.append(f"{name}={data[name]}i")
+
+    for name in FLOAT_FIELDS:
+        if data[name] is not None:
+            fields.append(f"{name}={data[name]}")
+
+    for name in STRING_FIELDS:
+        if data[name]:
+            fields.append(f'{name}="{escape_field_string(data[name])}"')
+
     line = (
         f"{MEASUREMENT},"
         f"hostname={HUAWEI_ROUTER_HOSTNAME} "
-
-
-        # Basic metrics
-
-        f"connection_status={data['connection_status']}i,"
-        f"service_status={data['service_status']}i,"
-        f"sim_status={data['sim_status']}i,"
-        f"ipv4=\"{escape_field_string(data['ipv4'])}\","
-        f"ipv6=\"{escape_field_string(data['ipv6'])}\","
-        f"uptime={data['uptime']}i,"
-        
-        # Traffic
-        f"download_rate={data['download_rate']}i,"
-        f"upload_rate={data['upload_rate']}i,"
-        f"current_download={data['current_download']}i,"
-        f"current_upload={data['current_upload']}i,"
-        f"total_download={data['total_download']}i,"
-        f"total_upload={data['total_upload']}i,"
-        
-        # LTE
-        f"rsrp={data['rsrp']},"
-        f"rsrq={data['rsrq']},"
-        f"rssi={data['rssi']},"
-        f"sinr={data['sinr']},"
-        f"pci={data['pci']}i,"
-        f"dl_bandwidth={data['dl_bandwidth']},"
-        f"ul_bandwidth={data['ul_bandwidth']},"
-        f"earfcn_dl={data['earfcn_dl']}i,"
-        f"earfcn_ul={data['earfcn_ul']}i,"
-        f"lte_band=\"{escape_field_string(data['lte_band'])}\","
-        f"lte_cqi={data['lte_cqi']}i,"
-        f"tac={data['tac']}i,"
-        f"cell_id={data['cell_id']}i,"
-        f"scc_pci={data['scc_pci']}i,"
-
-        # 5G NR
-
-        f"nr_rsrp={data['nr_rsrp']},"
-        f"nr_rsrq={data['nr_rsrq']},"
-        f"nr_sinr={data['nr_sinr']},"
-        f"nr_dl_bandwidth={data['nr_dl_bandwidth']},"
-        f"nr_ul_bandwidth={data['nr_ul_bandwidth']},"
-        f"nr_dl_earfcn={data['nr_dl_earfcn']}i,"
-        f"nr_ul_earfcn={data['nr_ul_earfcn']}i,"
-        f"nr_rank={data['nr_rank']}i,"
-        f"nr_cqi={data['nr_cqi']}i,"
-        f"nr_bler={data['nr_bler']},"
-        f"nr_band=\"{escape_field_string(data['nr_band'])}\","
-
-
-        # Connection / network status
-
-        f"roaming_status={data['roaming_status']}i,"
-        f"poor_signal_status={data['poor_signal_status']}i,"
-        f"endc_status={data['endc_status']}i,"
-        f"endc_restricted_status={data['endc_restricted_status']}i,"
-        f"signal_icon={data['signal_icon']}i,"
-        f"signal_icon_nr={data['signal_icon_nr']}i,"
-        f"current_network_type={data['current_network_type']}i,"
-        f"current_network_type_ex={data['current_network_type_ex']}i"
+        + ",".join(fields)
     )
 
     request = urllib.request.Request(
@@ -467,205 +459,30 @@ def write_to_influx(data):
 # Main blockk
 
 def main():
-
+    
     try:
-
-        data = read_huawei()
-
-        print("Huawei Modem")
-        print("============")
-
-        print(
-            f"Hostname            : {HUAWEI_ROUTER_HOSTNAME}"
-        )
-
-        print(
-            f"Connection Status : {data['connection_status']}"
-        )
-
-        print(
-            f"Service Status    : {data['service_status']}"
-        )
-
-        print(
-            f"SIM Status        : {data['sim_status']}"
-        )
-
-        print(
-            f"IPv4              : {data['ipv4']}"
-        )
-
-        print(
-            f"IPv6              : {data['ipv6']}"
-        )
-
-        print(
-            f"Uptime            : {data['uptime']} s"
-        )
-
-        print()
-        print("LTE")
-        print("---")
-
-        print(
-            f"RSRP              : {data['rsrp']} dBm"
-        )
-
-        print(
-            f"RSRQ              : {data['rsrq']} dB"
-        )
-
-        print(
-            f"RSSI              : {data['rssi']} dBm"
-        )
-
-        print(
-            f"SINR              : {data['sinr']} dB"
-        )
-
-        print(
-            f"PCI               : {data['pci']}"
-        )
-
-        print(
-            f"DL Bandwidth      : {data['dl_bandwidth']} MHz"
-        )
-
-        print(
-            f"UL Bandwidth      : {data['ul_bandwidth']} MHz"
-        )
-
-        print(
-            f"DL EARFCN         : {data['earfcn_dl']}"
-        )
-
-        print(
-            f"UL EARFCN         : {data['earfcn_ul']}"
-        )
-
-        print(
-            f"LTE Band          : {data['lte_band']}"
-        )
-
-        print(
-            f"NR Band           : {data['nr_band']}"
-        )
-
-        print(
-            f"LTE CQI           : {data['lte_cqi']}"
-        )
-
-        print(
-            f"TAC               : {data['tac']}"
-        )
-
-        print(
-            f"Cell ID           : {data['cell_id']}"
-        )
-
-        print(
-            f"SCC PCI           : {data['scc_pci']}"
-        )
-
-        print()
-        print("5G NR")
-        print("-----")
-
-        print(
-            f"NR RSRP           : {data['nr_rsrp']} dBm"
-        )
-
-        print(
-            f"NR RSRQ           : {data['nr_rsrq']} dB"
-        )
-
-        print(
-            f"NR SINR           : {data['nr_sinr']} dB"
-        )
-
-        print(
-            f"NR DL Bandwidth      : {data['nr_dl_bandwidth']} MHz"
-        )
         
-        print(
-            f"NR UL Bandwidth      : {data['nr_ul_bandwidth']} MHz"
-        )
+        data = read_huawei()
+        
+        if DEBUG:
+            print(f"{'hostname':<24}: {HUAWEI_ROUTER_HOSTNAME}")
+            for name, value in data.items():
+                print(f"{name:<24}: {value}{UNITS.get(name, '')}")
 
-        print(
-            f"NR DL EARFCN      : {data['nr_dl_earfcn']}"
-        )
-
-        print(
-            f"NR UL EARFCN      : {data['nr_ul_earfcn']}"
-        )
-
-        print(
-            f"NR Rank           : {data['nr_rank']}"
-        )
-
-        print(
-            f"NR CQI            : {data['nr_cqi']}"
-        )
-
-        print(
-            f"NR BLER           : {data['nr_bler']}"
-        )
-
-        print()
-        print("Network")
-        print("-------")
-
-        print(
-            f"Roaming Status    : {data['roaming_status']}"
-        )
-
-        print(
-            f"Poor Signal       : {data['poor_signal_status']}"
-        )
-
-        print(
-            f"EN-DC Status      : {data['endc_status']}"
-        )
-
-        print(
-            f"EN-DC Restricted     : {data['endc_restricted_status']}"
-        )
-
-        print(
-            f"Signal Icon       : {data['signal_icon']}"
-        )
-
-        print(
-            f"Signal Icon NR    : {data['signal_icon_nr']}"
-        )
-
-        print(
-            f"Network Type      : {data['current_network_type']}"
-        )
-
-        print(
-            f"Network Type Ex   : {data['current_network_type_ex']}"
-        )
-
-
-        # Write to InfluxDB
-
+                
+        # Write to InfluxDB                
         write_to_influx(data)
-
-        print()
-        print(
-            f"{MEASUREMENT}: erfolgreich nach InfluxDB geschrieben."
-        )
-
+                
+        print(f"{HUAWEI_ROUTER_HOSTNAME}: {MEASUREMENT} successfully written to InfluxDB.")
+                
     except Exception as exc:
 
         print(
-            f"ERROR: {exc}",
+            f"{HUAWEI_ROUTER_HOSTNAME}: ERROR: {exc}",
             file=sys.stderr
         )
 
         sys.exit(1)
-
 
 if __name__ == "__main__":
     main()
